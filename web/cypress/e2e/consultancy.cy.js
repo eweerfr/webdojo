@@ -1,51 +1,70 @@
-describe('Formulário de Consultoria', () => {
-    it('Deve solicitar consultoria individual', () => {
-        cy.start()
-        cy.submitLoginForm('papito@webdojo.com', 'katana123')
+import consultancyData from '../fixtures/consultancy.json'
 
+describe('Formulário de Consultoria', () => {
+    beforeEach(() => {
+        cy.login()
         cy.goTo('Formulários', 'Consultoria')
+    })
+
+    it('Deve solicitar consultoria individual', () => {
+
+        const consultancyForm = consultancyData.personal
 
         cy.get('input[placeholder="Digite seu nome completo"]')
-            .type('Fernando Papito')
+            .type(consultancyForm.name)
 
         cy.get('#email')
-            .type('papito@teste.com.br')
+            .type(consultancyForm.email)
 
         cy.get('input[placeholder="(00) 00000-0000"]')
-            .type('11989899090')
-            .should('have.value', '(11) 98989-9090')
+            .type(consultancyForm.fone)
+        //.should('have.value', '(11) 98989-9090')
 
         //localizar como fosse XPath
         cy.contains('label', 'Tipo de Consultoria')
             .parent()
             .find('select')
-            .select('Individual')
+            .select(consultancyForm.consultancyType)
 
-        cy.contains('label', 'Pessoa Física')
-            .find('input')
-            .check()
-            .should('be.checked')
+        if (consultancyForm.personType === 'cpf') {
+            cy.contains('label', 'Pessoa Física')
+                .find('input')
+                .check()
+                .should('be.checked')
 
-        cy.contains('label', 'Pessoa Jurídica')
-            .find('input')
-            .should('be.not.checked')
+            cy.contains('label', 'Pessoa Jurídica')
+                .find('input')
+                .should('be.not.checked')
+        }
 
-        cy.contains('label', 'CPF')
-            .parent()
-            .find('input')
-            .type('36991120049')
-            .should('be.value', '369.911.200-49')
+        if (consultancyForm.personType === 'cnpj') {
+            cy.contains('label', 'Pessoa Jurídica')
+                .find('input')
+                .check()
+                .should('be.checked')
 
+            cy.contains('label', 'Pessoa Física')
+                .find('input')
+                .should('be.not.checked')
+        }
 
-        const discoveryChannels = [
-            'Instagram',
-            'LinkedIn',
-            'Udemy',
-            'YouTube',
-            'Indicação de Amigo'
-        ]
+        if (consultancyForm.personType === 'cpf') {
+            cy.contains('label', 'CPF')
+                .parent()
+                .find('input')
+                .type(consultancyForm.document)
+            //.should('be.value', '369.911.200-49')
+        }
 
-        discoveryChannels.forEach((channel) => {
+        if (consultancyForm.personType === 'cnpj') {
+            cy.contains('label', 'CNPJ')
+                .parent()
+                .find('input')
+                .type(consultancyForm.document)
+            //.should('be.value', '369.911.200-49')
+        }
+
+        consultancyForm.discoveryChannels.forEach((channel) => {
             cy.contains('label', channel)
                 .find('input')
                 .check()
@@ -53,22 +72,13 @@ describe('Formulário de Consultoria', () => {
         })
 
         cy.get('input[type="file"')
-            .selectFile('./cypress/fixtures/document.pdf', { force: true })
+            .selectFile(consultancyForm.file, { force: true })
 
         cy.get('textarea[placeholder="Descreva mais detalhes sobre sua necessidade"]')
-            .type('Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.')
-            .should('be.value', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.')
+            .type(consultancyForm.description)
+            .should('be.text', consultancyForm.description)
 
-
-        const techs = [
-            'Cypress',
-            'Playwright',
-            'Selenium',
-            'Robot Framework',
-            'WebDriverIO'
-        ]
-
-        techs.forEach((tech) => {
+        consultancyForm.techs.forEach((tech) => {
             cy.get('input[placeholder="Digite uma tecnologia e pressione Enter"]')
                 .type(tech)
                 .type('{enter}')
@@ -89,24 +99,143 @@ describe('Formulário de Consultoria', () => {
             .should('not.exist')        //valida que nao existe mais
 
 
-        cy.contains('label', 'termos de uso')
-            .find('input')
-            .check()
-            .should('be.checked')
+        if (consultancyForm.terms === true) {
+            cy.contains('label', 'termos de uso')
+                .find('input')
+                .check()
+                .should('be.checked')
+        }
 
         cy.contains('button', 'Enviar formulário')
             .click()
 
-        cy.contains('Sua solicitação de consultoria foi enviada com sucesso! Em breve, nossa equipe entrará em contato através do email fornecido.')
+        cy.get('.modal', { timeout: 7000 })
             .should('be.visible')
+            .find('.modal-content')
+            .should('be.visible')
+            .and('have.text', 'Sua solicitação de consultoria foi enviada com sucesso! Em breve, nossa equipe entrará em contato através do email fornecido.')
+
+        // cy.contains('Sua solicitação de consultoria foi enviada com sucesso! Em breve, nossa equipe entrará em contato através do email fornecido.')
+        //     .should('be.visible')
 
     })
 
-    it('Deve verificar os campos obrigatórios', () => {
-        cy.start()
-        cy.submitLoginForm('papito@webdojo.com', 'katana123')
+    it('Deve solicitar consultoria In Company', () => {
 
-        cy.goTo('Formulários', 'Consultoria')
+        const consultancyForm = consultancyData.company
+
+        cy.get('input[placeholder="Digite seu nome completo"]')
+            .type(consultancyForm.name)
+
+        cy.get('#email')
+            .type(consultancyForm.email)
+
+        cy.get('input[placeholder="(00) 00000-0000"]')
+            .type(consultancyForm.fone)
+        //.should('have.value', '(11) 98989-9090')
+
+        //localizar como fosse XPath
+        cy.contains('label', 'Tipo de Consultoria')
+            .parent()
+            .find('select')
+            .select(consultancyForm.consultancyType)
+
+        if (consultancyForm.personType === 'cpf') {
+            cy.contains('label', 'Pessoa Física')
+                .find('input')
+                .check()
+                .should('be.checked')
+
+            cy.contains('label', 'Pessoa Jurídica')
+                .find('input')
+                .should('be.not.checked')
+        }
+
+        if (consultancyForm.personType === 'cnpj') {
+            cy.contains('label', 'Pessoa Jurídica')
+                .find('input')
+                .check()
+                .should('be.checked')
+
+            cy.contains('label', 'Pessoa Física')
+                .find('input')
+                .should('be.not.checked')
+        }
+
+        if (consultancyForm.personType === 'cpf') {
+            cy.contains('label', 'CPF')
+                .parent()
+                .find('input')
+                .type(consultancyForm.document)
+            //.should('be.value', '369.911.200-49')
+        }
+
+        if (consultancyForm.personType === 'cnpj') {
+            cy.contains('label', 'CNPJ')
+                .parent()
+                .find('input')
+                .type(consultancyForm.document)
+            //.should('be.value', '369.911.200-49')
+        }
+
+        consultancyForm.discoveryChannels.forEach((channel) => {
+            cy.contains('label', channel)
+                .find('input')
+                .check()
+                .should('be.checked')
+        })
+
+        cy.get('input[type="file"')
+            .selectFile(consultancyForm.file, { force: true })
+
+        cy.get('textarea[placeholder="Descreva mais detalhes sobre sua necessidade"]')
+            .type(consultancyForm.description)
+            .should('be.text', consultancyForm.description)
+
+        consultancyForm.techs.forEach((tech) => {
+            cy.get('input[placeholder="Digite uma tecnologia e pressione Enter"]')
+                .type(tech)
+                .type('{enter}')
+
+            cy.contains('label', 'Tecnologias')
+                .parent()
+                .contains('span', tech)
+                .should('be.visible')
+        })
+
+        cy.contains('label', 'Tecnologias')
+            .parent()
+            .contains('span', 'WebDriverIO') //clica em excluir em uma tag para testes
+            .find('button')
+            .click()
+
+        cy.contains('WebDriverIO')
+            .should('not.exist')        //valida que nao existe mais
+
+
+        if (consultancyForm.terms === true) {
+            cy.contains('label', 'termos de uso')
+                .find('input')
+                .check()
+                .should('be.checked')
+        }
+
+        cy.contains('button', 'Enviar formulário')
+            .click()
+
+        cy.get('.modal', { timeout: 7000 })
+            .should('be.visible')
+            .find('.modal-content')
+            .should('be.visible')
+            .and('have.text', 'Sua solicitação de consultoria foi enviada com sucesso! Em breve, nossa equipe entrará em contato através do email fornecido.')
+
+        // cy.contains('Sua solicitação de consultoria foi enviada com sucesso! Em breve, nossa equipe entrará em contato através do email fornecido.')
+        //     .should('be.visible')
+
+    })
+
+
+    it('Deve verificar os campos obrigatórios', () => {
         cy.contains('button', 'Enviar formulário')
             .click()
 
@@ -134,6 +263,5 @@ describe('Formulário de Consultoria', () => {
             .and('have.class', 'text-red-400')
             .and('have.css', 'color', 'rgb(248, 113, 113)')
     })
-
 })
 
