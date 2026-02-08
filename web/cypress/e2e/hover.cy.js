@@ -1,7 +1,7 @@
 describe('Simulando Mouseover', () => {
     it('Deve mostrar um texto ao passar o mouse em cima do link do instagram', () => {
         cy.login()
-
+        cy.wait(1000)
         cy.contains('Isso é Mouseover!')
             .should('not.exist')
         cy.get('[data-cy="instagram-link"]')
